@@ -36,6 +36,7 @@ module OmniAuth
           VALID_ADAPTER_CONFIGURATION_KEYS.each do |name|
             instance_variable_set("@#{name}", configuration[name])
           end
+          debug("Omniauth LDAP provider started.")
         end
 
         def connect(options={})
