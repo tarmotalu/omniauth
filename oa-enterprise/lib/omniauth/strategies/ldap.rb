@@ -45,6 +45,7 @@ module OmniAuth
           password_field 'Password', 'password'
         end.to_response
       end
+      
       def perform
       	begin
       		@adaptor.bind(:bind_dn => request.POST['username'], :password => request.POST['password'])
