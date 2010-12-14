@@ -36,6 +36,7 @@ module OmniAuth
           VALID_ADAPTER_CONFIGURATION_KEYS.each do |name|
             instance_variable_set("@#{name}", configuration[name])
           end
+          debug("Omniauth LDAP provider started.")
         end
 
         def connect(options={})
@@ -68,7 +69,8 @@ module OmniAuth
         end
 
         def bind(options={})
-          disconnect! if force_connect?
+          debug("Binding with options: #{options.inspect}.")
+          disconnect! if force_connect? and connecting?
           connect(options) unless connecting?
           begin
             @bind_tried = true
@@ -96,6 +98,7 @@ module OmniAuth
         end
 
         def disconnect!(options={})
+          debug("Disconnecting.")
           unbind(options)
           @connection = @uri = @with_start_tls = nil
           @disconnected = true
