@@ -246,6 +246,10 @@ module OmniAuth
           @logger.debug("#{Time.now} #{message}") if @logger
         end        
 
+        def force_connect?
+          @force_connect
+        end
+
         def target
           return nil if @uri.nil?
           if @with_start_tls
