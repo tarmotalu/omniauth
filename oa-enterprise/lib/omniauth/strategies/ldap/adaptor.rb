@@ -52,7 +52,7 @@ module OmniAuth
             :port => port,
           }
           config[:encryption] = {:method => method} if method
-          debug("Connecting to LDAP server #{uri}")
+          debug("Connecting to LDAP server.")
           @connection, @uri, @with_start_tls =
           begin
             uri = construct_uri(host, port, method == :simple_tls)
