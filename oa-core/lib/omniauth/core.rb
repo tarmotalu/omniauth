@@ -1,15 +1,16 @@
 require 'rack'
 require 'singleton'
-require 'omniauth/form'
 
 module OmniAuth
+  module Strategies; end
 
   autoload :Builder,  'omniauth/builder'
   autoload :Strategy, 'omniauth/strategy'
   autoload :Test,     'omniauth/test'
+  autoload :Form,     'omniauth/form'
 
-  module Strategies
-    autoload :Password, 'omniauth/strategies/password'
+  def self.strategies
+    @@strategies ||= []
   end
 
   class Configuration
@@ -17,11 +18,23 @@ module OmniAuth
 
     @@defaults = {
       :path_prefix => '/auth',
-      :on_failure => Proc.new do |env, message_key|
+      :on_failure => Proc.new do |env|
+        message_key = env['omniauth.error.type']
         new_path = "#{OmniAuth.config.path_prefix}/failure?message=#{message_key}"
-        [302, {'Location' => "#{new_path}", 'Content-Type'=> 'text/html'}, []]
+        [302, {'Location' => new_path, 'Content-Type'=> 'text/html'}, []]
       end,
-      :form_css => Form::DEFAULT_CSS
+      :form_css => Form::DEFAULT_CSS,
+      :test_mode => false,
+      :allowed_request_methods => [:get, :post],
+      :mock_auth => {
+        :default => {
+          'provider' => 'default',
+          'uid' => '1234',
+          'user_info' => {
+            'name' => 'Bob Example'
+          }
+        }
+      }
     }
 
     def self.defaults
@@ -40,8 +53,29 @@ module OmniAuth
       end
     end
 
+    def add_mock(provider, mock={})
+      # Stringify keys recursively one level.
+      mock.keys.each do |key|
+        mock[key.to_s] = mock.delete(key)
+      end
+      mock.each_pair do |key, val|
+        if val.is_a? Hash
+          val.keys.each do |subkey|
+            val[subkey.to_s] = val.delete(subkey)
+          end
+        end
+      end
+
+      # Merge with the default mock and ensure provider is correct.
+      mock = self.mock_auth[:default].dup.merge(mock)
+      mock["provider"] = provider.to_s
+
+      # Add it to the mocks.
+      self.mock_auth[provider.to_sym] = mock
+    end
+
     attr_writer :on_failure
-    attr_accessor :path_prefix, :form_css
+    attr_accessor :path_prefix, :allowed_request_methods, :form_css, :test_mode, :mock_auth, :full_host
   end
 
   def self.config
@@ -50,6 +84,10 @@ module OmniAuth
 
   def self.configure
     yield config
+  end
+
+  def self.mock_auth_for(provider)
+    config.mock_auth[provider.to_sym] || config.mock_auth[:default]
   end
 
   module Utils
@@ -61,7 +99,11 @@ module OmniAuth
       'github' => 'GitHub',
       'tripit' => 'TripIt',
       'soundcloud' => 'SoundCloud',
-      'smugmug' => 'SmugMug'
+      'smugmug' => 'SmugMug',
+      'cas' => 'CAS',
+      'trademe' => 'TradeMe',
+      'ldap'  => 'LDAP',
+      'google_oauth2' => 'GoogleOAuth2'
     }
 
     module_function
