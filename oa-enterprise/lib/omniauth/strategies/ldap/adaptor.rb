@@ -34,6 +34,7 @@ module OmniAuth
           @configuration = configuration.dup
           @configuration[:allow_anonymous] ||= false
           @logger = @configuration.delete(:logger)
+          @force_connect = @configuration.delete(:force_connect)
           message = []
           MUST_HAVE_KEYS.each do |name|
               message << name if configuration[name].nil?
@@ -73,6 +74,7 @@ module OmniAuth
         end
 
         def bind(options={})
+          disconnect! if @force_connect
           connect(options) unless connecting?
           begin
           @bind_tried = true
